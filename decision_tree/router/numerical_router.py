@@ -4,6 +4,7 @@ from decision_tree.feature_thresholds import numerical_threshold
 from decision_tree.router.router import Router
 
 class NumericalRouter(Router):
+    """A class for routing data based on numerical (continous) features"""
 
     def __init__(self, feature_col, feature_col_values):
         super().__init__(feature_col, feature_col_values)

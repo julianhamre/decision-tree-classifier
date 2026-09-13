@@ -16,9 +16,20 @@ class Node:
         return self.__router 
 
     def route(self, datapoint):
+        """
+        Routes a datapoint to be predicted by 
+        returning the next node in its path 
+        through the decision tree.
+        """
         return self.__router.route(datapoint, self)
 
     def assign_decision(self, decision):
+        """
+        Assigns the given decision to the node.
+        A decision is a label value representing
+        the prediction the node will make if it
+        becomes a leaf.
+        """
         self.__decision = decision
 
     def train_numerical_router(self, feature_col, feature_values):
