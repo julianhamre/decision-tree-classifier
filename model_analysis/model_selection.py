@@ -42,6 +42,6 @@ def select_the_best_model(models):
         if score > best_score:
             best_score = score
             best_model = model
-    print(f"The best model had criterion={best_model['criterion']}, max_depth={best_model['depth']}, and validation F1 score={best_model['score']}")
+    print(f"The best model had criterion={best_model['criterion']}, max_depth={best_model['depth']}, and mean cross-validated F1 score={best_model['score']}")
     return best_model["model"] 
  
