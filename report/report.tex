@@ -1,0 +1,120 @@
+\documentclass{article}
+% \usepackage[margin=3cm]{geometry}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc} 
+\usepackage[T1]{fontenc} 
+\usepackage{csquotes} 
+\usepackage[hidelinks]{hyperref} 
+\usepackage[style=ieee, backend=biber]{biblatex} 
+\usepackage{minted}
+
+% \addbibresource{references.bib}
+
+\title{INF264 - Project 1 report}
+\author{Julian Hamre}
+\date{September 2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+In this project, I implemented the ID3 decision tree classifier algorithm from scratch.
+This machine learning model classifies data points by traversing through a binary tree.
+The tree consists of nodes containing decision-making logic based on specific features of the data point.
+These nodes guide each data point to its most appropriate decision-making leaf.
+The leaf returns a label which classifies the data point.
+My implementation is evaluated on the given churn dataset using several classifier metrics.
+I have completed this project alone.
+
+\section{Implementation}
+
+The classifier is represented by the \texttt{DecisionTreeClassifier} class
+located in \texttt{decision\_tree\_classifier.py}. This class constructs and utilizes a
+\texttt{DecisionTree} object during training and predicting.
+
+\subsection{The \texttt{DecisionTree} class}
+
+A \texttt{DecisionTree} object represents a binary tree of nodes.
+It does not contain references to all the nodes in the tree explicitly.
+It only contains a reference to its root node. 
+This is because the nodes themselves contain references to their nearest neighbors,
+enabling traversal between them. 
+New nodes are added to the tree with the two child assigning methods.
+These take a to-become-parent node and a to-become-child node as input arguments,
+assign the parent node as the child nodes' parent reference, and vice versa.
+
+\subsubsection{Nodes}
+
+A \texttt{Node} object is essentially a terminal for traversing data points.
+It contains a reference to its parent node, left child node, and right child node, if they exist.
+The node's depth in the tree is also stored in the object, 
+and is calculated by adding one to the parent node's depth value.
+Additionally, a node can contain a decision, which is the label value it will return
+to classify a data point.
+However, the node will only return the decision if it is a leaf in the tree.
+Otherwise, its job is to route a data point further downwards in the tree
+using its assigned \texttt{Router} object.
+
+\subsubsection{Routers}
+
+A \texttt{Router} object's main job is to select the next node in the path of a traversing data point.
+Each router decides if a data point should continue to the left or right child node
+based on a single feature of the point.
+I have implemented two \texttt{Router} classes, one for routing based on categorical features,
+and one for routing based on numerical (continuous) features.
+These two classes extend the same superclass, which implements their common logic.
+
+The reason I chose to implement two classes, is because it is beneficial to binarize categorical
+and numerical variables differently. If the router routes based on a categorical feature,
+it should go either left or right based on if the feature value in question is,
+or is not equal to a certain value. 
+For example, if you had a feature called weather, you could check if it was sunny or not sunny.
+Here is my implementation of that method.
+
+\begin{minted}{python}
+def route(self, datapoint, from_node):
+    feature_value = datapoint[self._feature_col]
+    if feature_value == self.__threshold:
+        return from_node.right_child()
+    else:
+        return from_node.left_child()
+\end{minted}
+
+Positives are always associated with going right. 
+So, if the data point's feature value is equal to the certain value, called the threshold,
+it will be routed to the right child node. Otherwise, it will be routed left.
+
+This is not a sensible approach for numerical features,
+because most numerical feature values are unique.
+Every unique feature value would then get its own split in the tree.
+Therefore, a \texttt{NumericalRouter} object routes a data point to the right
+if its feature value is bigger than the mean feature value of the data the router was trained on.
+Otherwise, it will be routed left.
+
+\begin{minted}{python}
+if feature_value <= self.__threshold:
+    return from_node.left_child()
+else:
+    return from_node.right_child()
+\end{minted}
+
+A router also contains logic for dividing and routing training datasets during tree growth,
+which I will explain in a later section.
+
+\subsection{Training}
+
+Model training mainly consists of growing the decision tree.
+This is mostly handled by a \texttt{TreeGrower} object.
+Firstly, the \texttt{DecisionTree} is constructed in the \texttt{fit} method of the \texttt{DecisionTreeClassifier}.
+Thereafter, it is passed to the \texttt{TreeGrower} together with the training dataset.
+
+The \texttt{grow\_tree} method of this grower object is the method that calls the ID3 algorithm.
+
+
+
+\end{document}
