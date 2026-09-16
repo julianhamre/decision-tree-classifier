@@ -237,4 +237,16 @@ However, if the feature that was split on was a multicategorical feature, the al
 will forcibly re-split on the same feature, until no data partitions contain more than one instance of that feature.
 This is done to emulate what would have been a multibranch split in a non-binary tree.
 
+\subsection{Predicting}
+
+The prediction process is the simplest part of the implementation.
+The \texttt{predict} method of the \texttt{DecisionTreeClassifier} iterates through 
+the rows of a pandas dataframe of feature values to be predicted.
+It calls the recursive \texttt{decision} method on each row, which traverses it through the decision tree.
+The path is made by calling the \texttt{route} method of each node it encounters.
+The router in each node returns the next node based on the row's instance
+of the feature the router was trained on.
+When a leaf is reached, it returns the decision label.
+The predicted labels are added to a list and returned as an array.
+
 \end{document}
