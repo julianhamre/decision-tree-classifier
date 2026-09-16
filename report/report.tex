@@ -25,7 +25,7 @@
 
 In this project, I implemented the ID3 decision tree classifier algorithm from scratch.
 This machine learning model classifies data points by traversing through a binary tree.
-The tree consists of nodes containing decision-making logic based on specific features of the data point.
+The tree consists of nodes containing routing logic based on specific features of the data point.
 These nodes guide each data point to its most appropriate decision-making leaf.
 The leaf returns a label which classifies the data point.
 My implementation is evaluated on the given churn dataset using several classifier metrics.
@@ -103,18 +103,138 @@ else:
     return from_node.right_child()
 \end{minted}
 
-A router also contains logic for dividing and routing training datasets during tree growth,
-which I will explain in a later section.
+A router also contains logic for dividing and routing training dataset partitions during tree growth,
+which I will explain under \emph{Data splitting} in Section~\ref{sec:the-trainingdata-class}.
 
 \subsection{Training}
 
-Model training mainly consists of growing the decision tree.
-This is mostly handled by a \texttt{TreeGrower} object.
-Firstly, the \texttt{DecisionTree} is constructed in the \texttt{fit} method of the \texttt{DecisionTreeClassifier}.
-Thereafter, it is passed to the \texttt{TreeGrower} together with the training dataset.
+Model training consists of growing the decision tree.
+This is mostly handled by a \texttt{TreeGrower} object constructed by the \texttt{fit} method of the \texttt{DecisionTreeClassifier}.
+However, data management and information gain calculation are handled
+by helper classes.
 
-The \texttt{grow\_tree} method of this grower object is the method that calls the ID3 algorithm.
+\subsubsection{The \texttt{TrainingData} class}
+\label{sec:the-trainingdata-class}
 
+I use \texttt{TrainingData} objects to represent the training dataset partitions during model training.
+These objects have several essential methods used by the tree grower, like \texttt{features\_are\_equal} for checking if all feature rows are equal,
+or the \texttt{feature\_values} method, which can retrieve the feature values given a feature column index. 
+Their most important responsibilities, however, are to distinguish between feature variable types and to perform data splitting.
 
+\paragraph{Distinguishing between feature types.}
+A \texttt{TrainingData} object always keeps track of which features are categorical and numerical.
+This is not straight forward, because I represent the features and labels using numpy matrices.
+Numpy matrices can only contain one datatype, so I have no way to determine the feature types using the matrices.
+Therefore, I predetermine the feature types using the static class method \texttt{create\_from\_pandas\_data}.
+This method receives the training data represented by pandas dataframes.
+It checks all the column dtypes of the dataframes and stores the indices of the columns
+containing floating point numbers in a list.
+Finally, it passes on this list to a \texttt{TrainingData} object.
+
+This enables categorical features to be returned as a column of integers, and numerical features as a column of floats.
+Also, a node can use the \texttt{is\_numerical\_feature} method to select the appropriate router type for a node.
+
+\paragraph{Data splitting.}
+A \texttt{TrainingData} object can split itself in two partitions using the \texttt{divided\_data} method.
+The method does this using a row masking function passed to it as an argument.
+This function returns a boolean matrix constructed based on a given feature column.
+For example if the feature was weather again,
+the boolean matrix can contain \texttt{True} for each row containing \texttt{"sunny"},
+and \texttt{False} for every other row.
+Thus, the \texttt{TrainingData} object can construct two new \texttt{TrainingData} objects,
+where one contains all the rows aligning with the \texttt{False} values,
+and the other contains the rows aligning with the \texttt{True} ones.
+The list containing the column indices of the numerical features is also passed on to the two partitions,
+ensuring that they still can distinguish between feature types.
+
+The actual call to the \texttt{divided\_data} method happens inside a \texttt{Router} object,
+because it is the router that contains the row masking function implementation.
+The routers calculate the boolean values of the mask based on how they would route each row as a datapoint.
+Rows that would have been routed left get \texttt{False} values,
+and rows that would have been routed right get \texttt{True} values.
+
+\subsubsection{Information gain calculation}
+
+\paragraph{The \texttt{PurityIndex} class.}
+This class can calculate the purity $I(\mathbf{x})$ of a label column $\mathbf{x}$ using either the entropy or gini index.
+Both purity representations are sums of terms $t(x_i)$ for each unique label $x_i$.
+
+\begin{align*}
+  I(\mathbf{x}) = \sum_{i=0}^{n}t(x_i)
+\end{align*}
+
+It is the $t(x_i)$ terms that differ between the entropy and gini index.
+
+\begin{align*}
+  t_{\text{entropy}}(x_i) &= - P(x = x_i) \log_2 P(x = x_i)\\ 
+  t_{\text{gini}}(x_i) &= P(x = x_i)(1 - P(x = x_i))
+\end{align*}
+
+Therefore, I implemented one method for each term.
+
+\begin{minted}{python}
+def __entropy_term(self, probability):
+    return -probability * np.log2(probability) 
+
+def __gini_term(self, probability):
+    return probability * (1 - probability)
+\end{minted}
+
+Then, during object construction, the object's \texttt{calculate} method is determined
+as the sum of terms using the term function aligning with the given keyword argument 
+\texttt{index\_type}. The probability $P$ of each unique label is calculated as
+the number of times the label appears over the total number of labels.
+
+\paragraph{The \texttt{InformationGain} class.}
+I use the \texttt{InformationGain} class to calculate the column with the highest information gain.
+It does that by comparing the information gain scores of each feature column.
+The scores are calculated using the purity scores given by a \texttt{PurityIndex} object.
+I had to implement two different information gain calculators, one for categorical feature columns,
+and one for numerical ones.
+This is because conditional purity of a label column $y$ is calculated differently given a numerical feature $x$.
+
+\begin{align*}
+  I_{\text{categorical feature}} (y|x) &= \sum_i P(x = x_i) I(y|x = x_i)\\ 
+  I_{\text{numerical feature}}(y|x) &= P(x \leq \bar{x}) I(y | x \leq \bar{x}) + P(x > \bar{x}) I(y | x > \bar{x})   
+\end{align*}
+
+For a numerical feature, the sum only contains two terms.
+One considering the labels of the features that are smaller than the mean feature value $\bar{x}$,
+and one considering the labels of the features that are larger.
+
+\subsubsection{The \texttt{TreeGrower} class}
+
+This class brings all the model training logic together.
+The growth process is started by calling the \texttt{grow\_tree} method on the \texttt{TreeGrower} object.
+This method takes a \texttt{TrainingData} object as an input argument, and makes the first call to
+the private \texttt{grow\_from} method on the root node.
+
+\begin{minted}{python}
+def __grow_from(self, node, data):
+    if data.labels_are_equal() or data.features_are_equal():
+        self.__complete_leaf(node, data)
+        return
+    information_gain = InformationGain(data, purity_index=self.__criterion)
+    best_feature_col = information_gain.feature_with_highest_information_gain()
+    self.__complete_subtree(node, best_feature_col, data)
+\end{minted}
+
+This is the method that contains the ID3 algorithm.
+Firstly, it does the equality checks on the labels and features to decide if the node should become a leaf.
+If not, it splits on the feature with the highest information gain.
+The splitting is done by calling the \texttt{complete\_subtree} method.
+This method completes the node by adding its decision as the majority label, and appropriate router
+object based on the selected feature. It also checks if the maximum tree depth has been
+reached, and leaves the node as a leaf if it has.
+Otherwise, it will create branches based on how the router splits on the feature.
+
+The branching is done by the \texttt{branch\_from} helper method.
+It creates two new child nodes and attaches them to the node branched from.
+The data is then split in two using the node's router, and each child node
+gets one data partition each.
+Thereafter, the \texttt{grow\_grom} method is usually recursively called on the child nodes for continued growth. 
+However, if the feature that was split on was a multicategorical feature, the algorithm
+will forcibly re-split on the same feature, until no data partitions contain more than one instance of that feature.
+This is done to emulate what would have been a multibranch split in a non-binary tree.
 
 \end{document}
