@@ -156,18 +156,18 @@ and rows that would have been routed right get \texttt{True} values.
 \subsubsection{Information gain calculation}
 
 \paragraph{The \texttt{PurityIndex} class.}
-This class can calculate the purity $I(\mathbf{x})$ of a label column $\mathbf{x}$ using either the entropy or gini index.
-Both purity representations are sums of terms $t(x_i)$ for each unique label $x_i$.
+This class can calculate the purity $I(Y)$ of a label column $Y$ using either the entropy or gini index.
+Both purity representations are sums of terms $t(y_i)$ for each unique label $y_i$ $Y$ can take.
 
 \begin{align*}
-  I(\mathbf{x}) = \sum_{i=0}^{n}t(x_i)
+  I(Y) = \sum_{i=0}^{n}t(y_i)
 \end{align*}
 
-It is the $t(x_i)$ terms that differ between the entropy and gini index.
+It is the $t(y_i)$ terms that differ between the entropy and gini index.
 
 \begin{align*}
-  t_{\text{entropy}}(x_i) &= - P(x = x_i) \log_2 P(x = x_i)\\ 
-  t_{\text{gini}}(x_i) &= P(x = x_i)(1 - P(x = x_i))
+  t_{\text{entropy}}(y_i) &= - P(Y = y_i) \log_2 P(Y = y_i)\\ 
+  t_{\text{gini}}(y_i) &= P(Y = y_i)(1 - P(Y = y_i))
 \end{align*}
 
 Therefore, I implemented one method for each term.
@@ -182,24 +182,25 @@ def __gini_term(self, probability):
 
 Then, during object construction, the object's \texttt{calculate} method is determined
 as the sum of terms using the term function aligning with the given keyword argument 
-\texttt{index\_type}. The probability $P$ of each unique label is calculated as
-the number of times the label appears over the total number of labels.
+\texttt{index\_type}. The probability $P(Y = y_i)$ for each unique label $y_i$ is calculated as
+the number of times the label appears in the column over the total number of labels.
 
 \paragraph{The \texttt{InformationGain} class.}
-I use the \texttt{InformationGain} class to calculate the column with the highest information gain.
+I use the \texttt{InformationGain} class to find the feature column $X$ with the highest information gain
+$IG(X) = I(Y) - I(Y | X)$.
 It does that by comparing the information gain scores of each feature column.
 The scores are calculated using the purity scores given by a \texttt{PurityIndex} object.
 I had to implement two different information gain calculators, one for categorical feature columns,
 and one for numerical ones.
-This is because conditional purity of a label column $y$ is calculated differently given a numerical feature $x$.
+This is because conditional purity of a label column $Y$ is calculated differently given a numerical feature $X$.
 
 \begin{align*}
-  I_{\text{categorical feature}} (y|x) &= \sum_i P(x = x_i) I(y|x = x_i)\\ 
-  I_{\text{numerical feature}}(y|x) &= P(x \leq \bar{x}) I(y | x \leq \bar{x}) + P(x > \bar{x}) I(y | x > \bar{x})   
+  I_{\text{categorical feature}} (Y|X) &= \sum_i P(X = x_i) I(Y|X = x_i)\\ 
+  I_{\text{numerical feature}}(Y|X) &= P(X \leq \bar{X}) I(Y | X \leq \bar{X}) + P(X > \bar{X}) I(Y | X > \bar{X})   
 \end{align*}
 
 For a numerical feature, the sum only contains two terms.
-One considering the labels of the features that are smaller than the mean feature value $\bar{x}$,
+One considering the labels of the features that are smaller than the mean feature value $\bar{X}$,
 and one considering the labels of the features that are larger.
 
 \subsubsection{The \texttt{TreeGrower} class}

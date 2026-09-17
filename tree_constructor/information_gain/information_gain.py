@@ -7,15 +7,7 @@ class InformationGain:
 
     def __init__(self, data, purity_index="entropy"):
         self.__data = data
-        self.__purity = PurityIndex(index_type=purity_index)
-
-    def __probability_of_numerical_feature_value(self, feature_value, feature_values):
-        threshold = numerical_threshold(feature_values)
-        binarized_on_threshold = feature_values > threshold 
-        if feature_value <= threshold:
-            return float( (len(binarized_on_threshold) - np.count_nonzero(binarized_on_threshold)) / len(binarized_on_threshold) )
-        else:
-            return float( np.count_nonzero(binarized_on_threshold) / len(binarized_on_threshold) )
+        self.__purity = PurityIndex(index_type=purity_index) 
 
     def __purity_given_categorical_feature(self, feature_values, labels):
         purity = 0.0
@@ -30,15 +22,13 @@ class InformationGain:
     def __purity_given_numerical_feature(self, feature_values, labels):
         purity = 0.0
         threshold = numerical_threshold(feature_values)
-        exhaustive_feature_values = [threshold - 1, threshold + 1]
-        for feature_value in exhaustive_feature_values:
-            probability_of_value = self.__probability_of_numerical_feature_value(feature_value, feature_values) 
-            if feature_value <= threshold:
-                labels_given_feature_value = labels[feature_values <= threshold]
-            else:
-                labels_given_feature_value = labels[feature_values > threshold]
-            purity += probability_of_value * self.__purity.calculate(labels_given_feature_value)
-        return float(purity)
+        labels_of_smaller_feature_values = labels[feature_values <= threshold]
+        labels_of_larger_feature_values = labels[feature_values > threshold]
+        probability_of_smaller_feature_value = len(labels_of_smaller_feature_values) / len(labels)
+        probability_of_larger_feature_value = len(labels_of_larger_feature_values) / len(labels)
+        purity += probability_of_smaller_feature_value * self.__purity.calculate(labels_of_smaller_feature_values)
+        purity += probability_of_larger_feature_value * self.__purity.calculate(labels_of_larger_feature_values)
+        return purity
 
     def __information_gain_given_categorical_feature(self, feature_values, labels):
         return self.__purity.calculate(labels) - self.__purity_given_categorical_feature(feature_values, labels)
