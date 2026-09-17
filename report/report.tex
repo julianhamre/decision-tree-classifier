@@ -249,4 +249,39 @@ of the feature the router was trained on.
 When a leaf is reached, it returns the decision label.
 The predicted labels are added to a list and returned as an array.
 
+\section{Model evaluation}
+
+\subsection{Approach}
+
+\paragraph{Performance measure.}
+I evaluated my model on the given churn dataset.
+This is an unbalanced dataset, because only 27 \% of the train samples are labeled as \textit{churn}.
+Therefore, the accuracy score might be a bad approach, 
+since a baseline model predicting \textit{no churn} for each sample would get a 73 \% accuracy score.
+That is why I chose the F1 score, because it optimizes based on both precision and recall.
+These metrics both focus on the number of predicted \textit{churn} values as a fraction of a total.
+
+\paragraph{Hyperparameters.}
+I had two hyperparameters available for tuning,
+which were \texttt{criterion} and \texttt{max\_depth}.
+\texttt{criterion} is a binary variable, which makes it easy to select values for it.
+The good candidate values for \texttt{max\_depth}, however, were not immediately obvious.
+Therefore, I started by choosing a wide spread of depth limits before narrowing
+it down after getting my first validation scores.
+
+\paragraph{Model selection.}
+I chose to use $k$-fold validation as the model selection method,
+which enabled me to evaluate a mean cross-validated F1 score for each model.
+Thus, I was able to use as much of my dataset as possible for training, and avoid
+unlucky train-validation-splits. With $k = 5$, I kept the validation partition
+big enough to remain reliable, since the label distribution was unbalanced.
+After having evaluated a number of models, the one with the highest score could
+be selected, and finally be tested using the unseen test data, ensuring an unbiased final 
+evaluation of the model.
+
+Random seeds were consistently used whenever any step in the training process was done using randomizing. 
+This ensured result reproducibility.
+
+
+
 \end{document}
