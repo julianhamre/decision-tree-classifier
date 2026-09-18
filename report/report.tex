@@ -284,6 +284,123 @@ evaluation of the model.
 Random seeds were consistently used whenever any step in the training process was done using randomizing. 
 This ensured result reproducibility.
 
+\subsection{Result}
 
+\subsubsection{Performance} 
+
+I ran both my own implementation and the Sklearn implementation through the same model selection
+procedure to enable a comparison between their performances.
+During model training, the different models received relatively similar mean cross-validated F1 scores for the different hyperparameter values,
+see \autoref{fig:val-scores}.
+Models using the \texttt{entropy} criterion performed almost identically to the models using the \texttt{gini} criterion,
+so I only included the figure showing the entropy validation scores.
+
+\begin{figure}[ht]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/cross-val-scores-entropy.png}
+  \caption{Mean cross-validated F1 scores of models using the entropy criterion}
+  \label{fig:val-scores}
+\end{figure}
+
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{lccc}
+    \hline
+    Implementation & Criterion & Max depth & Mean cross-validated F1 score \\
+    \hline
+    My own & Entropy & 4 & 0.581 \\
+    \hline
+    Sklearn & Entropy & 2 & 0.600 \\
+    \hline
+  \end{tabular}
+  \caption{Characteristics of the selected models}
+  \label{tab:selected-models}
+\end{table}
+
+The selected models' characteristics are described in \autoref{tab:selected-models}.
+My model received a mean cross-validated F1 score of 0.581.
+This outperforms the baselines predicting a constant label value.
+By the definition of the F1 score, the baseline predicting \textit{no churn} only
+will get score 0, because it predicts zero positives.
+If I evaluate a baseline only predicting \textit{churn} on my training dataset,
+I will get this F1 score.
+
+\begin{align*}
+  F1_{\text{only churn}}= 2\cdot\frac{\text{precision}\cdot\text{recall}}{\text{precision} + \text{recall}}
+     \approx 2\cdot\frac{0.27\cdot 1}{0.27 + 1}  
+     = 0.425 
+\end{align*}
+
+
+After the models were selected, I could finally test them using test data.
+Their scores are described in \autoref{tab:test-performances}.
+They show that my implementation has a slightly better accuracy,
+precision and F1 score than Sklearn's implementation, but falls behind on recall.
+All in all, they have similar performances.
+
+\begin{table}[htb]
+  \centering
+  \begin{tabular}{lcccc}
+    \hline
+    Implementation & Accuracy & Precision & Recall & F1 score \\
+    \hline
+    My own & 0.771 & 0.565 & 0.605 & 0.584 \\
+    \hline
+    Sklearn & 0.743 & 0.514 & 0.655 & 0.576 \\
+    \hline
+  \end{tabular}
+  \caption{Performances on the test dataset}
+  \label{tab:test-performances}
+\end{table}
+
+\subsubsection{Feature importance}
+
+I implemented the permutation importance algorithm to determine the features that
+have the most influence on the predictions. 
+This algorithm scores a feature based on how much the model performance changes
+when the feature is scrambled in the dataset to be predicted. 
+The permutation score is defined as the mean deviation from the model's reference score,
+which is the model performance on the untouched dataset.
+I ran this algorithm on my model using test data and the accuracy score performance metric.
+Only two features received a non-zero permutation score.
+\texttt{InternetService} was scored 0.0619, and \texttt{Contract} was scored 0.0739.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[width=0.8\textwidth]{figures/feature_importance.png}
+  \caption{Permutation importance scores of my selected model on the test dataset. 
+           The accuracy score was used as performance metric, and each column was
+           scrambled 30 times.}
+  \label{fig:permutation}
+\end{figure}
+
+\paragraph{Score interpretation.} 
+The non-zero permutation scores are still very small, 
+which means that the model accuracy changes very little when the model cannot rely on the features.
+The reason might have to do with how accurate random guesses are compared to predictions.
+Let's say the model is in the process of routing a data point, and it reaches a node that routes
+based on the scrambled feature.
+Since the data point's value of that feature is random,
+the direction it will be routed is also random.
+In other words, the model prediction is derived using a certain amount of guesswork.
+However, random guesses are often accurate in the case of this dataset.
+Since the dataset has two possible label types, and 73 \% of the datapoints are labeled \textit{no churn}
+in the train dataset,
+a baseline model only predicting \textit{no churn} would get a 73 \% accuracy score on that dataset.
+My selected decision tree classifier received a 77 \% accuracy score on the test data,
+which is not much of an improvement.
+This can explain the low permutation scores, because models having to result to 
+some naive guesswork still can predict relatively accurately.
+
+\paragraph{Algorithm weakness.}
+The barplot in \autoref{fig:permutation} 
+illustrates a weakness in this method of finding important features.
+The scores indicate that my selected model only uses two features to predict every label.
+However, that does not mean that those two features are the only informative ones.
+Several of the other features might also carry information, but since they most probably
+correlate with the two selected features, they might introduce more noise than information
+to models fitted on them.
+Therefore, permutation importance scores are not necessarily a good approach for finding
+\textit{all} informative features.
 
 \end{document}
