@@ -6,7 +6,7 @@ from tree_constructor.tree_grower import TreeGrower
 from decision_tree.decision_tree import DecisionTree
 
 
-class DecisionTreeClassifier(BaseEstimator):
+class DecisionTreeClassifier(BaseEstimator): # Extends the Sklearn BaseEstimator to enable the cross_val_score function to clone the model 
 
     def __init__(self, criterion="entropy", max_depth=None):
         self.criterion = criterion
