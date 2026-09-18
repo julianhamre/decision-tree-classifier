@@ -28,7 +28,8 @@ This machine learning model classifies data points by traversing through a binar
 The tree consists of nodes containing routing logic based on specific features of the data point.
 These nodes guide each data point to its most appropriate decision-making leaf.
 The leaf returns a label which classifies the data point.
-My implementation is evaluated on the given churn dataset using several classifier metrics.
+My implementation is used to generalize the given churn dataset 
+and evaluated using several classifier metrics.
 I have completed this project alone.
 
 \section{Implementation}
@@ -91,7 +92,7 @@ So, if the data point's feature value is equal to the certain value, called the 
 it will be routed to the right child node. Otherwise, it will be routed left.
 
 This is not a sensible approach for numerical features,
-because most numerical feature values are unique.
+because most of them are unique.
 Every unique feature value would then get its own split in the tree.
 Therefore, a \texttt{NumericalRouter} object routes a data point to the right
 if its feature value is bigger than the mean feature value of the data the router was trained on.
@@ -128,12 +129,12 @@ This is not straight forward, because I represent the features and labels using 
 Numpy matrices can only contain one datatype, so I have no way to determine the feature types using the matrices.
 Therefore, I predetermine the feature types using the static class method \texttt{create\_from\_pandas\_data}.
 This method receives the training data represented by pandas dataframes.
-It checks all the column dtypes of the dataframes and stores the indices of the columns
+It checks all the column dtypes and stores the indices of the columns
 containing floating point numbers in a list.
 Finally, it passes on this list to a \texttt{TrainingData} object.
 
 This enables categorical features to be returned as a column of integers, and numerical features as a column of floats.
-Also, a node can use the \texttt{is\_numerical\_feature} method to select the appropriate router type for a node.
+Also, a node can use the \texttt{is\_numerical\_feature} method to select the appropriate router type for the node.
 
 \paragraph{Data splitting.}
 A \texttt{TrainingData} object can split itself in two partitions using the \texttt{divided\_data} method.
@@ -187,9 +188,8 @@ as the sum of terms using the term function aligning with the given keyword argu
 the number of times the label appears in the column over the total number of labels.
 
 \paragraph{The \texttt{InformationGain} class.}
-I use the \texttt{InformationGain} class to find the feature column $X$ with the highest information gain
-$IG(X) = I(Y) - I(Y | X)$.
-It does that by comparing the information gain scores of each feature column.
+I use the \texttt{InformationGain} class to find the feature column $X$ with the highest information gain.
+It does that by comparing the information gain score $IG(X) = I(Y) - I(Y | X)$ of each feature column.
 The scores are calculated using the purity scores given by a \texttt{PurityIndex} object.
 I had to implement two different information gain calculators, one for categorical feature columns,
 and one for numerical ones.
@@ -402,5 +402,26 @@ correlate with the two selected features, they might introduce more noise than i
 to models fitted on them.
 Therefore, permutation importance scores are not necessarily a good approach for finding
 \textit{all} informative features.
+
+\section{Conclusion}
+
+My implementation of the ID3 classifier performs well compared to Sklearn's implementation.
+However, it does not perform particularly well on the churn dataset.
+My model does not outperform baseline models to a high extent.
+It received a recall score of 0.605, which means that it on average only manages to 
+correctly classify 61 \% of the \textit{churn} labels. Additionally, its precision score
+of 0.565 indicates that 43 \% of its predicted \textit{churn} values are false positives.
+The low permutation scores also illustrate how the model's high accuracy score
+barely outperforms a baseline model only predicting \textit{no churn} values.
+Therefore, it might be wise to utilize other model families to generalize
+this dataset.
+
+\section*{On my use of AI}
+
+I have not used AI to generate text or code that I used in this project.
+All implementations and reasoning are my own.
+AI has only been used for purposes such as understanding the documentation and use cases of methods.
+One good example is when I asked Claude how efficient it is to iterate through the rows 
+in a pandas dataframe.
 
 \end{document}
