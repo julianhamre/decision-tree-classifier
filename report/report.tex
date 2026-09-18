@@ -70,7 +70,8 @@ and one for routing based on numerical (continuous) features.
 These two classes extend the same superclass, which implements their common logic.
 
 The reason I chose to implement two classes, is because it is beneficial to binarize categorical
-and numerical variables differently. If the router routes based on a categorical feature,
+and numerical variables differently.\footnote{I am aware that the project description said that I could assume all features were numerical (continuous). However, I chose to distinguish between numerical and categorical features to enable better model performance}
+If the router routes based on a categorical feature,
 it should go either left or right based on if the feature value in question is,
 or is not equal to a certain value. 
 For example, if you had a feature called weather, you could check if it was sunny or not sunny.
